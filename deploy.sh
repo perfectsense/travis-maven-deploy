@@ -20,6 +20,6 @@ if [[ "$TRAVIS_REPO_SLUG" == "perfectsense/"* ]] && \
     mvn -Pprepare-release initialize
 
     echo "Deploying RELEASE to Maven repository..."
-    mvn -o clean $OPTIONS
+    mvn clean $OPTIONS
   fi
 fi
