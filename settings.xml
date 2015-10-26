@@ -7,28 +7,12 @@
             <id>psddev-releases</id>
             <username>${env.MAVEN_USERNAME}</username>
             <password>${env.MAVEN_PASSWORD}</password>
-            <configuration>
-                <httpHeaders>
-                    <property>
-                        <name>Authorization</name>
-                        <value>${env.MAVEN_HEADER_AUTHORIZATION}</value>
-                    </property>
-                </httpHeaders>
-            </configuration>
         </server>
 
         <server>
             <id>psddev-snapshots</id>
             <username>${env.MAVEN_USERNAME}</username>
             <password>${env.MAVEN_PASSWORD}</password>
-            <configuration>
-                <httpHeaders>
-                    <property>
-                        <name>Authorization</name>
-                        <value>${env.MAVEN_HEADER_AUTHORIZATION}</value>
-                    </property>
-                </httpHeaders>
-            </configuration>
         </server>
     </servers>
 </settings>
