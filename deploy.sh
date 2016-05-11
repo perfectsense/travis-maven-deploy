@@ -23,4 +23,14 @@ if [[ "$TRAVIS_REPO_SLUG" == "perfectsense/"* ]] && \
     echo "Deploying RELEASE to Maven repository..."
     mvn clean $OPTIONS
   fi
+
+  if [[ "$TRAVIS_BRANCH" == "patch/"* ]]; then
+
+    echo "Preparing PATCH version..."
+    git fetch --unshallow || true
+    mvn -Pprepare-release initialize
+
+    echo "Deploying PATCH to Maven repository..."
+    mvn clean $OPTIONS
+  fi
 fi
