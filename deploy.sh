@@ -8,6 +8,7 @@ if [[ "$TRAVIS_REPO_SLUG" == "perfectsense/"* ]] && \
   OPTIONS="--settings=$(dirname $0)/settings.xml -Pdeploy deploy"
 
   if [[ "$TRAVIS_BRANCH" == "release/"* ]] ||
+     [ "$TRAVIS_BRANCH" == "develop" ] ||
      [ "$TRAVIS_BRANCH" == "master" ]; then
 
     echo "Deploying SNAPSHOT to Maven repository..."
