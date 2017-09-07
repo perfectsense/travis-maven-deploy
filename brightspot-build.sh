@@ -180,14 +180,12 @@ function artifactory_status() {
 
     local artifactory_url_prefix="https://artifactory.psdops.com/psddev-releases"
 
-    local dependency_info=
-    maven_expression $plugin_path "project.groupId project.artifactId project.version" dependency_info
-
-    dependency_info=($dependency_info)
-
-    local group_id=${dependency_info[0]}
-    local artifact_id=${dependency_info[1]}
-    local version=${dependency_info[2]}
+    local group_id=
+    maven_expression $plugin_path project.groupId group_id
+    local artifact_id=
+    maven_expression $plugin_path project.artifactId artifact_id
+    local version=
+    maven_expression $plugin_path project.version version
 
     local group_id_pathed=${group_id//./\/}
 
