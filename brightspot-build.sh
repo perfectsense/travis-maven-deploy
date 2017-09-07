@@ -332,9 +332,9 @@ if [[ "$TRAVIS_REPO_SLUG" == "perfectsense/"* ]]; then
         touch TAG_VERSION bom/TAG_VERSION parent/TAG_VERSION grandparent/TAG_VERSION
         mvn -B -Dtravis.tag=$TRAVIS_TAG -Pprepare-release initialize
 
-        verify_no_release_snapshots
-
         mvn -B clean install
+
+        verify_no_release_snapshots
 
         NEWLY_VERSIONED_MODULES=
         get_newly_versioned_modules NEWLY_VERSIONED_MODULES
