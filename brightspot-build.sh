@@ -39,10 +39,10 @@ function maven_expression() {
         done
         interactive_expr="${interactive_expr}0"$'\n'
 
-        raw_expr_value=$(echo "$interactive_expr" | mvn -o -f $path help:evaluate)
+        raw_expr_value=$(echo "$interactive_expr" | mvn -o -f $path/pom.xml help:evaluate)
     else
         # single expression - run in non-interactive batch mode
-        raw_expr_value=$(mvn -B -f $path help:evaluate -Dexpression=$expr)
+        raw_expr_value=$(mvn -B -f $path/pom.xml help:evaluate -Dexpression=$expr)
     fi
 
     local expr_value=$(echo "$raw_expr_value" \
