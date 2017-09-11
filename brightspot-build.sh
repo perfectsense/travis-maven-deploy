@@ -27,6 +27,7 @@ function maven_expression() {
     fi
     # end result var
 
+    local raw_expr_grep_pattern="\[INFO\]\|\[WARNING\]\|\[ERROR\]"
     local raw_expr_value=
 
     local expr_arr=($expr)
@@ -39,17 +40,14 @@ function maven_expression() {
         done
         interactive_expr="${interactive_expr}0"$'\n'
 
-        raw_expr_value=$(echo "$interactive_expr" | mvn -o -f $path/pom.xml help:evaluate)
+        raw_expr_grep_pattern="$raw_expr_grep_pattern\|Download"
+        raw_expr_value=$(echo "$interactive_expr" | mvn -f $path/pom.xml help:evaluate)
     else
         # single expression - run in non-interactive batch mode
         raw_expr_value=$(mvn -B -f $path/pom.xml help:evaluate -Dexpression=$expr)
     fi
 
-    local expr_value=$(echo "$raw_expr_value" \
-        | grep -F -v "[INFO]" \
-        | grep -F -v "[WARNING]" \
-        | grep -F -v "[ERROR]"
-        )
+    local expr_value=$(echo "$raw_expr_value" | grep -v "$raw_expr_grep_pattern")
 
     build_log "maven_expression:       path: $path"
     build_log "maven_expression: expression: $expr"
@@ -180,12 +178,14 @@ function artifactory_status() {
 
     local artifactory_url_prefix="https://artifactory.psdops.com/psddev-releases"
 
-    local group_id=
-    maven_expression $plugin_path project.groupId group_id
-    local artifact_id=
-    maven_expression $plugin_path project.artifactId artifact_id
-    local version=
-    maven_expression $plugin_path project.version version
+    local dependency_info=
+    maven_expression $plugin_path "project.groupId project.artifactId project.version" dependency_info
+
+    dependency_info=($dependency_info)
+
+    local group_id=${dependency_info[0]}
+    local artifact_id=${dependency_info[1]}
+    local version=${dependency_info[2]}
 
     local group_id_pathed=${group_id//./\/}
 
