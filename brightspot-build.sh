@@ -315,69 +315,69 @@ function verify_no_release_snapshots() {
 
 function build() {
 
-echo "TRAVIS_COMMIT_RANGE: $TRAVIS_COMMIT_RANGE"
-echo "TRAVIS_TAG: $TRAVIS_TAG"
-echo "TRAVIS_REPO_SLUG: $TRAVIS_REPO_SLUG"
-echo "TRAVIS_PULL_REQUEST: $TRAVIS_PULL_REQUEST"
-echo "TRAVIS_BRANCH: $TRAVIS_BRANCH"
+    echo "TRAVIS_COMMIT_RANGE: $TRAVIS_COMMIT_RANGE"
+    echo "TRAVIS_TAG: $TRAVIS_TAG"
+    echo "TRAVIS_REPO_SLUG: $TRAVIS_REPO_SLUG"
+    echo "TRAVIS_PULL_REQUEST: $TRAVIS_PULL_REQUEST"
+    echo "TRAVIS_BRANCH: $TRAVIS_BRANCH"
 
-MAVEN_OPTS="-Xmx3000m -XX:MaxDirectMemorySize=2000m"
+    MAVEN_OPTS="-Xmx3000m -XX:MaxDirectMemorySize=2000m"
 
-if [[ "$TRAVIS_REPO_SLUG" == "perfectsense/"* ]]; then
+    if [[ "$TRAVIS_REPO_SLUG" == "perfectsense/"* ]]; then
 
-    if [ ! -z "$TRAVIS_TAG" ]; then
-        echo "Preparing RELEASE version..."
-        git fetch --unshallow || true
-        touch BSP_ROOT
-        touch TAG_VERSION bom/TAG_VERSION parent/TAG_VERSION grandparent/TAG_VERSION
-        mvn -B -Dtravis.tag=$TRAVIS_TAG -Pprepare-release initialize
+        if [ ! -z "$TRAVIS_TAG" ]; then
+            echo "Preparing RELEASE version..."
+            git fetch --unshallow || true
+            touch BSP_ROOT
+            touch TAG_VERSION bom/TAG_VERSION parent/TAG_VERSION grandparent/TAG_VERSION
+            mvn -B -Dtravis.tag=$TRAVIS_TAG -Pprepare-release initialize
 
-        mvn -B clean install
+            mvn -B clean install
 
-        verify_no_release_snapshots
+            verify_no_release_snapshots
 
-        local newly_versioned_modules=
-        get_newly_versioned_modules newly_versioned_modules
+            local newly_versioned_modules=
+            get_newly_versioned_modules newly_versioned_modules
 
-        echo "newly_versioned_modules: $newly_versioned_modules"
+            echo "newly_versioned_modules: $newly_versioned_modules"
 
-        mvn -B --settings=$(dirname $(pwd)/$0)/settings.xml -Pdeploy deploy -pl $newly_versioned_modules
-    else
-        mvn -B clean install -pl .,parent,bom,grandparent
+            mvn -B --settings=$(dirname $(pwd)/$0)/settings.xml -Pdeploy deploy -pl $newly_versioned_modules
+        else
+            mvn -B clean install -pl .,parent,bom,grandparent
 
-        local modified_modules=
+            local modified_modules=
 
-        if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-            if [[ "$TRAVIS_BRANCH" == "release/"* ]] ||
-               [[ "$TRAVIS_BRANCH" == "patch/"* ]] ||
-               [ "$TRAVIS_BRANCH" == "develop" ] ||
-               [ "$TRAVIS_BRANCH" == "master" ]; then
+            if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+                if [[ "$TRAVIS_BRANCH" == "release/"* ]] ||
+                   [[ "$TRAVIS_BRANCH" == "patch/"* ]] ||
+                   [ "$TRAVIS_BRANCH" == "develop" ] ||
+                   [ "$TRAVIS_BRANCH" == "master" ]; then
 
+                    project_diff_list $TRAVIS_COMMIT_RANGE modified_modules
+                    echo "modified_modules: $modified_modules"
+
+                    if [ ! -z "$modified_modules" ]; then
+                        echo "Deploying SNAPSHOT to Maven repository..."
+                        mvn -B --settings=$(dirname $(pwd)/$0)/settings.xml -Pdeploy deploy -pl $modified_modules
+                    else
+                        echo "No projects to deploy..."
+                    fi
+                else
+                    echo "Branch is not associated with a PR, nothing to do..."
+                fi
+            else
                 project_diff_list $TRAVIS_COMMIT_RANGE modified_modules
                 echo "modified_modules: $modified_modules"
 
                 if [ ! -z "$modified_modules" ]; then
-                    echo "Deploying SNAPSHOT to Maven repository..."
-                    mvn -B --settings=$(dirname $(pwd)/$0)/settings.xml -Pdeploy deploy -pl $modified_modules
+                    echo "Building pull request..."
+                    mvn -B clean install -pl $modified_modules
                 else
-                    echo "No projects to deploy..."
+                    echo "No projects to build..."
                 fi
-            else
-                echo "Branch is not associated with a PR, nothing to do..."
-            fi
-        else
-            project_diff_list $TRAVIS_COMMIT_RANGE modified_modules
-            echo "modified_modules: $modified_modules"
-
-            if [ ! -z "$modified_modules" ]; then
-                echo "Building pull request..."
-                mvn -B clean install -pl $modified_modules
-            else
-                echo "No projects to build..."
             fi
         fi
     fi
-fi
 }
 
 build
