@@ -313,6 +313,8 @@ function verify_no_release_snapshots() {
     fi
 }
 
+function build() {
+
 echo "TRAVIS_COMMIT_RANGE: $TRAVIS_COMMIT_RANGE"
 echo "TRAVIS_TAG: $TRAVIS_TAG"
 echo "TRAVIS_REPO_SLUG: $TRAVIS_REPO_SLUG"
@@ -334,14 +336,16 @@ if [[ "$TRAVIS_REPO_SLUG" == "perfectsense/"* ]]; then
 
         verify_no_release_snapshots
 
-        NEWLY_VERSIONED_MODULES=
-        get_newly_versioned_modules NEWLY_VERSIONED_MODULES
+        local newly_versioned_modules=
+        get_newly_versioned_modules newly_versioned_modules
 
-        echo "NEWLY_VERSIONED_MODULES: $NEWLY_VERSIONED_MODULES"
+        echo "newly_versioned_modules: $newly_versioned_modules"
 
-        mvn -B --settings=$(dirname $(pwd)/$0)/settings.xml -Pdeploy deploy -pl $NEWLY_VERSIONED_MODULES
+        mvn -B --settings=$(dirname $(pwd)/$0)/settings.xml -Pdeploy deploy -pl $newly_versioned_modules
     else
         mvn -B clean install -pl .,parent,bom,grandparent
+
+        local modified_modules=
 
         if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
             if [[ "$TRAVIS_BRANCH" == "release/"* ]] ||
@@ -349,13 +353,12 @@ if [[ "$TRAVIS_REPO_SLUG" == "perfectsense/"* ]]; then
                [ "$TRAVIS_BRANCH" == "develop" ] ||
                [ "$TRAVIS_BRANCH" == "master" ]; then
 
-                MODIFIED_MODULES=
-                project_diff_list $TRAVIS_COMMIT_RANGE MODIFIED_MODULES
-                echo "MODIFIED_MODULES: $MODIFIED_MODULES"
+                project_diff_list $TRAVIS_COMMIT_RANGE modified_modules
+                echo "modified_modules: $modified_modules"
 
-                if [ ! -z "$MODIFIED_MODULES" ]; then
+                if [ ! -z "$modified_modules" ]; then
                     echo "Deploying SNAPSHOT to Maven repository..."
-                    mvn -B --settings=$(dirname $(pwd)/$0)/settings.xml -Pdeploy deploy -pl $MODIFIED_MODULES
+                    mvn -B --settings=$(dirname $(pwd)/$0)/settings.xml -Pdeploy deploy -pl $modified_modules
                 else
                     echo "No projects to deploy..."
                 fi
@@ -363,16 +366,18 @@ if [[ "$TRAVIS_REPO_SLUG" == "perfectsense/"* ]]; then
                 echo "Branch is not associated with a PR, nothing to do..."
             fi
         else
-            MODIFIED_MODULES=
-            project_diff_list $TRAVIS_COMMIT_RANGE MODIFIED_MODULES
-            echo "MODIFIED_MODULES: $MODIFIED_MODULES"
+            project_diff_list $TRAVIS_COMMIT_RANGE modified_modules
+            echo "modified_modules: $modified_modules"
 
-            if [ ! -z "$MODIFIED_MODULES" ]; then
+            if [ ! -z "$modified_modules" ]; then
                 echo "Building pull request..."
-                mvn -B clean install -pl $MODIFIED_MODULES
+                mvn -B clean install -pl $modified_modules
             else
                 echo "No projects to build..."
             fi
         fi
     fi
 fi
+}
+
+build
