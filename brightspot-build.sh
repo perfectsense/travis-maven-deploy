@@ -95,6 +95,60 @@ function module_list() {
     fi
 }
 
+# Given a path ($path) to a maven module directory, returns a new line
+# separated string of all the sub-modules defined in the module's pom.xml file
+# recursively.
+function module_list_recursive() {
+
+    local path=$1
+
+    # result var
+    local __result_var=
+    if [ "$#" -gt 1 ]; then
+        __result_var=$2
+    else
+        __result_var=
+    fi
+    # end result var
+
+    echo "module_list_recursive: $path"
+
+    local combined_module_list=
+
+    local modules=
+    maven_expression $path project.modules modules
+
+    local module_list=$(echo "$modules" \
+        | grep '<string>' \
+        | sed 's/<\/*string>//g' \
+        | sed 's/[[:blank:]]*//')
+
+    build_log "module_list: $module_list"
+
+    for module in $module_list; do
+
+        combined_module_list="$combined_module_list $path/$module "
+
+        local sub_module_list=
+        module_list_recursive "$path/$module" sub_module_list
+
+        echo "sub_module_list: $sub_module_list"
+
+        #if [[ ! -z "$sub_module_list" ]]; then
+            combined_module_list="$combined_module_list $sub_module_list "
+        #fi
+    done
+
+    echo "combined_module_list: $combined_module_list"
+
+    # return
+    if [[ "$__result_var" ]]; then
+        eval $__result_var="'$combined_module_list'"
+    else
+        echo "$combined_module_list"
+    fi
+}
+
 # Fetches the list of modules for each project that has been changed between
 # the commit range ($commit_range) as a string of comma separated values. The
 # result can be directly used as the value of the Maven -pl option.
@@ -311,6 +365,94 @@ function verify_no_release_snapshots() {
 
         exit 1
     fi
+}
+
+function verify_bom_dependencies() {
+
+    local bom_deps_arr=()
+    local mod_deps_arr=()
+
+    # get the bom dependencies
+    local bom_deps=
+    maven_expression bom project.dependencyManagement.dependencies bom_deps
+
+    bom_deps=$(echo "$bom_deps" | grep -A 2 "<groupId>" || true)
+
+    # removes surrounding xml tags
+    local sed_xml_expr="s/<.*>\(.*\)<\/.*>/\1/"
+
+    if [[ ! -z $bom_deps ]]; then
+        bom_deps=$bom_deps$'\n--'
+    fi
+
+    while { read -r groupId; read -r artifactId; read -r version; read -r separator; }
+    do
+        groupId=$(echo "$groupId" | sed "$sed_xml_expr")
+        artifactId=$(echo "$artifactId" | sed "$sed_xml_expr")
+        version=$(echo "$version" | sed "$sed_xml_expr")
+
+        bom_deps_arr+=("$groupId:$artifactId:$version")
+    done <<< "$(echo "$bom_deps")"
+
+    # get the module list dependencies
+
+    local all_modules=()
+
+    local root_modules=
+    module_list . root_modules
+
+    # convert the list to space delim string with trailing space
+    root_modules=$(echo $root_modules" ")
+
+    # Remove the bom, parent, and grandparent since they aren't in the bom
+    root_modules=${root_modules/bom /}
+    root_modules=${root_modules/grandparent /}
+    root_modules=${root_modules/parent /}
+
+    for root_module in $root_modules; do
+
+        all_modules+=($root_module)
+
+        local sub_modules=
+        module_list $root_module sub_modules
+
+        for sub_module in $sub_modules; do
+            all_modules+=($root_module/$sub_module)
+        done
+    done
+
+    # TODO remove
+    echo "OK2: ${#all_modules[@]}"
+
+    for module in "${all_modules[@]}"; do
+        local dependency_info=
+        maven_expression $module "project.groupId project.artifactId project.version" dependency_info
+
+        dependency_info=($dependency_info)
+
+        local group_id=${dependency_info[0]}
+        local artifact_id=${dependency_info[1]}
+        local version=${dependency_info[2]}
+
+        mod_deps_arr+=("$group_id:$artifact_id:$version")
+    done
+
+    bom_deps_arr=($(for i in ${bom_deps_arr[@]}; do echo $i; done | sort))
+    mod_deps_arr=($(for i in ${mod_deps_arr[@]}; do echo $i; done | sort))
+
+    echo "bom dependency count:    ${#bom_deps_arr[@]}"
+    echo "module dependency count: ${#mod_deps_arr[@]}"
+
+    for dep in "${bom_deps_arr[@]}"; do
+        echo "bom: $dep"
+    done
+
+    for dep in "${mod_deps_arr[@]}"; do
+        echo "mod: $dep"
+    done
+
+    echo "bom dependency count:    ${#bom_deps_arr[@]}"
+    echo "module dependency count: ${#mod_deps_arr[@]}"
 }
 
 function build() {
