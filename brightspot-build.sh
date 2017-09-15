@@ -487,7 +487,7 @@ function build() {
         else
             mvn -B clean install -pl .,parent,bom,grandparent
 
-            local modified_modules=
+            local modified_modules_csv_list=
 
             if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
                 if [[ "$TRAVIS_BRANCH" == "release/"* ]] ||
@@ -495,12 +495,12 @@ function build() {
                    [ "$TRAVIS_BRANCH" == "develop" ] ||
                    [ "$TRAVIS_BRANCH" == "master" ]; then
 
-                    project_diff_list $TRAVIS_COMMIT_RANGE modified_modules
-                    echo "modified_modules: $modified_modules"
+                    project_diff_list $TRAVIS_COMMIT_RANGE modified_modules_csv_list
+                    echo "modified_modules: $modified_modules_csv_list"
 
-                    if [ ! -z "$modified_modules" ]; then
+                    if [ ! -z "$modified_modules_csv_list" ]; then
                         echo "Deploying SNAPSHOT to Maven repository..."
-                        mvn -B --settings=$(dirname $(pwd)/$0)/settings.xml -Pdeploy deploy -pl $modified_modules
+                        mvn -B --settings=$(dirname $(pwd)/$0)/settings.xml -Pdeploy deploy -pl $modified_modules_csv_list
                     else
                         echo "No projects to deploy..."
                     fi
@@ -508,12 +508,12 @@ function build() {
                     echo "Branch is not associated with a PR, nothing to do..."
                 fi
             else
-                project_diff_list $TRAVIS_COMMIT_RANGE modified_modules
-                echo "modified_modules: $modified_modules"
+                project_diff_list $TRAVIS_COMMIT_RANGE modified_modules_csv_list
+                echo "modified_modules: $modified_modules_csv_list"
 
-                if [ ! -z "$modified_modules" ]; then
+                if [ ! -z "$modified_modules_csv_list" ]; then
                     echo "Building pull request..."
-                    mvn -B clean install -pl $modified_modules
+                    mvn -B clean install -pl $modified_modules_csv_list
                 else
                     echo "No projects to build..."
                 fi
