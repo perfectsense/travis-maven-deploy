@@ -25,11 +25,10 @@ ARTIFACTORY_URL_PREFIX = "https://artifactory.psdops.com/psddev-releases"
 
 def maven_xpath(module_path, expr)
   list = maven_xpath_list(module_path, expr)
-  if list.size == 0
-    nil
-  else
-    list.next
+  list.each do |item|
+    return item
   end
+  nil
 end
 
 def maven_xpath_list(module_path, expr)
