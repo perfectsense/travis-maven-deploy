@@ -296,7 +296,7 @@ def build
       if newly_versioned_modules.length > 0
         puts "Deploying #{newly_versioned_modules.length} artifacts to artifactory."
 
-        system("mvn -B --settings=$(dirname $(pwd)/$0)/settings.xml -Pdeploy deploy -pl #{newly_versioned_modules.join(",")}", out: $stdout, err: :out)
+        system("mvn -B --settings=$(dirname $0)/settings.xml -Pdeploy deploy -pl #{newly_versioned_modules.join(",")}", out: $stdout, err: :out)
         if $? != 0 then raise ArgumentError, "Failed to deploy release!" end
 
       else
@@ -319,7 +319,7 @@ def build
 
           if modified_modules.length > 0
             puts "Deploying SNAPSHOT to Maven repository..."
-            system("mvn -B --settings=$(dirname $(pwd)/$0)/settings.xml -Pdeploy deploy -pl #{modified_modules.join(",")}", out: $stdout, err: :out)
+            system("mvn -B --settings=$(dirname $0)/settings.xml -Pdeploy deploy -pl #{modified_modules.join(",")}", out: $stdout, err: :out)
             if $? != 0 then raise ArgumentError, "Failed to deploy SNAPSHOT to artifactory!" end
 
           else
