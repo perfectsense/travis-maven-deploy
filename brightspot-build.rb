@@ -123,7 +123,7 @@ def maven_artifactory_status(maven_artifact)
 
   puts "Fetching: " + artifactory_url
 
-  artifactory_status = `curl -s -I "#{artifactory_url}" | head -n 1 | cut -d$' ' -f2`
+  artifactory_status = `curl -s -I "#{artifactory_url}" | head -n 1 | cut -d' ' -f2`
 
   puts "Status: " + artifactory_status
 
