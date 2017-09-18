@@ -319,6 +319,9 @@ def build
 
           if modified_modules.length > 0
             puts "Deploying SNAPSHOT to Maven repository..."
+
+            verify_bom_dependencies
+
             system("mvn -B --settings=$(dirname $(pwd)/$0)/etc/settings.xml -Pdeploy deploy -pl #{modified_modules.join(",")}", out: $stdout, err: :out)
             if $? != 0 then raise ArgumentError, "Failed to deploy SNAPSHOT to artifactory!" end
 
@@ -336,6 +339,9 @@ def build
 
         if modified_modules.length > 0
           puts "Building pull request..."
+
+          verify_bom_dependencies
+
           system("mvn -B clean install -pl #{modified_modules.join(",")}", out: $stdout, err: :out)
           if $? != 0 then raise ArgumentError, "Failed to build pull request!" end
 
