@@ -354,7 +354,7 @@ def build
 
           puts "Deploying pull request..."
 
-          system("mvn -B --settings=$(dirname $(pwd)/$0)/etc/settings.xml -Pdeploy deploy -pl .,parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
+          system("mvn -B --settings=$(dirname $(pwd)/$0)/etc/settings.xml -Pdeploy deploy -pl parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
           if $? != 0 then raise ArgumentError, "Failed to deploy PR!" end
         else
           puts "No modules to build..."
