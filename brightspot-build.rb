@@ -338,24 +338,13 @@ def build
         puts "modified_modules: #{modified_modules.join(" ")}"
 
         if modified_modules.length > 0
-          puts "Preparing pull request snapshot deploy..."
-
-          system("touch BSP_ROOT", out: $stdout, err: :out)
-          system("touch TAG_VERSION bom/TAG_VERSION parent/TAG_VERSION grandparent/TAG_VERSION", out: $stdout, err: :out)
-
-          modified_modules.each do |modified_module|
-            system("touch #{modified_module}/TAG_VERSION", out: $stdout, err: :out)
-          end
-
-          system("mvn -B -Dtravis.tag=40.#{ENV["TRAVIS_PULL_REQUEST"]}-SNAPSHOT -Pprepare-release initialize -pl .,parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
-          if $? != 0 then raise ArgumentError, "Failed to prepare PR snapshot build!" end
+          puts "Building pull request..."
 
           verify_bom_dependencies
 
-          puts "Deploying pull request..."
+          system("mvn -B clean install -pl #{modified_modules.join(",")}", out: $stdout, err: :out)
+          if $? != 0 then raise ArgumentError, "Failed to build pull request!" end
 
-          system("mvn -B --settings=$(dirname $(pwd)/$0)/etc/settings.xml -Pdeploy deploy -pl parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
-          if $? != 0 then raise ArgumentError, "Failed to deploy PR!" end
         else
           puts "No modules to build..."
         end
