@@ -352,7 +352,7 @@ def build
 
           puts "Installing pull request snapshot..."
 
-          system("mvn -B clean -Plibrary install -am -pl .,parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
+          system("mvn -B clean install -am -pl .,parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
           if $? != 0 then raise ArgumentError, "Failed to install pull request snapshot build!" end
 
           verify_bom_dependencies
