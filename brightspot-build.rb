@@ -283,7 +283,7 @@ def build
       system("mvn -B -Dtravis.tag=#{ENV["TRAVIS_TAG"]} -Pprepare-release initialize", out: $stdout, err: :out)
       if $? != 0 then raise ArgumentError, "Failed to prepare release!" end
 
-      system("mvn -B clean install", out: $stdout, err: :out)
+      system("mvn -B clean -Plibrary install", out: $stdout, err: :out)
       if $? != 0 then raise ArgumentError, "Failed to install release!" end
 
       verify_no_release_snapshots
@@ -296,7 +296,7 @@ def build
       if newly_versioned_modules.length > 0
         puts "Deploying #{newly_versioned_modules.length} artifacts to artifactory."
 
-        system("mvn -B --settings=$(dirname $(pwd)/$0)/etc/settings.xml -Pdeploy deploy -pl #{newly_versioned_modules.join(",")}", out: $stdout, err: :out)
+        system("mvn -B -Dmaven.test.skip=true --settings=$(dirname $(pwd)/$0)/etc/settings.xml -Pdeploy deploy -pl #{newly_versioned_modules.join(",")}", out: $stdout, err: :out)
         if $? != 0 then raise ArgumentError, "Failed to deploy release!" end
 
       else
@@ -304,15 +304,15 @@ def build
       end
 
     else
-      system("mvn -B clean install -pl .,parent,bom,grandparent", out: $stdout, err: :out)
-      if $? != 0 then raise ArgumentError, "Failed to prepare snapshot build!" end
-
       if ENV["TRAVIS_PULL_REQUEST"].to_s.eql?("false")
 
         if ENV["TRAVIS_BRANCH"].to_s.start_with?("release/*") ||
             ENV["TRAVIS_BRANCH"].to_s.start_with?("path/*") ||
             ENV["TRAVIS_BRANCH"].to_s.eql?("develop") ||
             ENV["TRAVIS_BRANCH"].to_s.eql?("master")
+
+          system("mvn -B clean -Plibrary install -pl .,parent,bom,grandparent", out: $stdout, err: :out)
+          if $? != 0 then raise ArgumentError, "Failed to prepare snapshot build!" end
 
           modified_modules = get_project_diff_list(ENV["TRAVIS_COMMIT_RANGE"])
           puts "modified_modules: #{modified_modules.join(" ")}"
@@ -338,13 +338,29 @@ def build
         puts "modified_modules: #{modified_modules.join(" ")}"
 
         if modified_modules.length > 0
-          puts "Building pull request..."
+          system("touch BSP_ROOT", out: $stdout, err: :out)
+          system("touch TAG_VERSION bom/TAG_VERSION parent/TAG_VERSION grandparent/TAG_VERSION", out: $stdout, err: :out)
+
+          modified_modules.each do |modified_module|
+            system("touch #{modified_module}/TAG_VERSION", out: $stdout, err: :out)
+          end
+
+          puts "Preparing pull request snapshot..."
+
+          system("mvn -B -Dtravis.tag=40.#{ENV["TRAVIS_PULL_REQUEST"]}-SNAPSHOT -Pprepare-release initialize -am -pl .,parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
+          if $? != 0 then raise ArgumentError, "Failed to prepare pull request snapshot build!" end
+
+          puts "Installing pull request snapshot..."
+
+          system("mvn -B clean -Plibrary install -am -pl .,parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
+          if $? != 0 then raise ArgumentError, "Failed to install pull request snapshot build!" end
 
           verify_bom_dependencies
 
-          system("mvn -B clean install -pl #{modified_modules.join(",")}", out: $stdout, err: :out)
-          if $? != 0 then raise ArgumentError, "Failed to build pull request!" end
+          puts "Deploying pull request snapshot..."
 
+          system("mvn -B -Dmaven.test.skip=true --settings=$(dirname $(pwd)/$0)/etc/settings.xml -Pdeploy deploy -pl parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
+          if $? != 0 then raise ArgumentError, "Failed to deploy pull request snapshot build!" end
         else
           puts "No modules to build..."
         end
