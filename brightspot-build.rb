@@ -311,7 +311,7 @@ def build
             ENV["TRAVIS_BRANCH"].to_s.eql?("develop") ||
             ENV["TRAVIS_BRANCH"].to_s.eql?("master")
 
-          system("mvn -B clean -Plibrary install -pl .,parent,bom,grandparent", out: $stdout, err: :out)
+          system("mvn -B clean install -pl .,parent,bom,grandparent", out: $stdout, err: :out)
           if $? != 0 then raise ArgumentError, "Failed to prepare snapshot build!" end
 
           modified_modules = get_project_diff_list(ENV["TRAVIS_COMMIT_RANGE"])
@@ -352,7 +352,7 @@ def build
 
           puts "Installing pull request snapshot..."
 
-          system("mvn -B clean install -am -pl .,parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
+          system("mvn -B clean -Plibrary install -am -pl .,parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
           if $? != 0 then raise ArgumentError, "Failed to install pull request snapshot build!" end
 
           verify_bom_dependencies
