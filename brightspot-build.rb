@@ -148,6 +148,15 @@ def get_newly_versioned_modules
   new_modules
 end
 
+def is_pom_modified(commit_range)
+  commit_range = commit_range.gsub("...", "..")
+
+  modified_files = `git diff-tree -m -r --no-commit-id --name-only #{commit_range}`
+
+  modified_file_names = `echo "#{modified_files}" | rev | cut -d/ -f1 | rev | uniq`
+  modified_file_names.split(/\n+/).index("pom.xml") != nil
+end
+
 def get_project_diff_list(commit_range)
 
   modified_modules = Array.new
@@ -349,6 +358,12 @@ def build
           end
 
           puts "Preparing pull request snapshot..."
+
+          if is_pom_modified(ENV["TRAVIS_COMMIT_RANGE"])
+            puts "Detected changes to pom.xml! Performing pre-build to locally resolve any new dependency versions."
+            system("mvn -B -Dmaven.test.skip=true clean install -am -pl .,parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
+            if $? != 0 then raise ArgumentError, "Failed to pre-install pull request snapshot build!" end
+          end
 
           system("mvn -B -Dtravis.pr=#{ENV["TRAVIS_PULL_REQUEST"]} -Pprepare-release initialize -am -pl .,parent,bom,grandparent,#{modified_modules.join(",")}", out: $stdout, err: :out)
           if $? != 0 then raise ArgumentError, "Failed to prepare pull request snapshot build!" end
