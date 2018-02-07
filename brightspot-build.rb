@@ -319,8 +319,6 @@ def build
       if ENV["TRAVIS_PULL_REQUEST"].to_s.eql?("false")
 
         if ENV["TRAVIS_BRANCH"].to_s.start_with?("release/*") ||
-            ENV["TRAVIS_BRANCH"].to_s.start_with?("patch/*") ||
-            ENV["TRAVIS_BRANCH"].to_s.eql?("develop") ||
             ENV["TRAVIS_BRANCH"].to_s.eql?("master")
 
           system("mvn -B clean install -pl .,parent,bom,grandparent", out: $stdout, err: :out)
