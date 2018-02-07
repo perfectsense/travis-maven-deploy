@@ -275,6 +275,7 @@ end
 
 def build
 
+  puts "REBUILD: " + (ENV["REBUILD"] || "")
   puts "TRAVIS_COMMIT_RANGE: " + (ENV["TRAVIS_COMMIT_RANGE"] || "")
   puts "TRAVIS_TAG: " + (ENV["TRAVIS_TAG"] || "")
   puts "TRAVIS_REPO_SLUG: " + (ENV["TRAVIS_REPO_SLUG"] || "")
@@ -319,26 +320,36 @@ def build
       if ENV["TRAVIS_PULL_REQUEST"].to_s.eql?("false")
 
         if ENV["TRAVIS_BRANCH"].to_s.start_with?("release/*") ||
-            ENV["TRAVIS_BRANCH"].to_s.start_with?("patch/*") ||
-            ENV["TRAVIS_BRANCH"].to_s.eql?("develop") ||
             ENV["TRAVIS_BRANCH"].to_s.eql?("master")
 
           system("mvn -B clean install -pl .,parent,bom,grandparent", out: $stdout, err: :out)
           if $? != 0 then raise ArgumentError, "Failed to prepare snapshot build!" end
 
-          modified_modules = get_project_diff_list(ENV["TRAVIS_COMMIT_RANGE"])
-          puts "modified_modules: #{modified_modules.join(" ")}"
+          rebuild = ENV["REBUILD"].to_s.casecmp("true") == 0
 
-          if modified_modules.length > 0
+          if rebuild
             puts "Deploying SNAPSHOT to Maven repository..."
 
             verify_bom_dependencies
 
-            system("mvn -B -Dmaven.deploy.skip=#{DEBUG_SKIP_DEPLOY} --settings=$(dirname $(pwd)/$0)/etc/settings.xml -Pdeploy deploy -pl #{modified_modules.join(",")}", out: $stdout, err: :out)
+            system("mvn -B -Dmaven.deploy.skip=#{DEBUG_SKIP_DEPLOY} --settings=$(dirname $(pwd)/$0)/etc/settings.xml -Pdeploy deploy", out: $stdout, err: :out)
             if $? != 0 then raise ArgumentError, "Failed to deploy SNAPSHOT to artifactory!" end
 
           else
-            puts "No modules to deploy..."
+            modified_modules = get_project_diff_list(ENV["TRAVIS_COMMIT_RANGE"])
+            puts "modified_modules: #{modified_modules.join(" ")}"
+
+            if modified_modules.length > 0
+              puts "Deploying SNAPSHOT to Maven repository..."
+
+              verify_bom_dependencies
+
+              system("mvn -B -Dmaven.deploy.skip=#{DEBUG_SKIP_DEPLOY} --settings=$(dirname $(pwd)/$0)/etc/settings.xml -Pdeploy deploy -pl #{modified_modules.join(",")}", out: $stdout, err: :out)
+              if $? != 0 then raise ArgumentError, "Failed to deploy SNAPSHOT to artifactory!" end
+
+            else
+              puts "No modules to deploy..."
+            end
           end
 
         else
