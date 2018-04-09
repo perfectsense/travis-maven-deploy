@@ -731,7 +731,6 @@ def deploy
                 ' DEPLOY=true'\
                 ' mvn clean deploy'\
                 ' -B'\
-                ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Dmaven.test.skip=true'\
                 ' -DdeployAtEnd=true'\
                 " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
