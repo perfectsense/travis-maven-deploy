@@ -602,7 +602,7 @@ def deploy
                 ' -B'\
                 ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Dmaven.test.skip=true'\
-                ' -DdeployAtEnd=true'\
+                ' -DdeployAtEnd=false'\
                 " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                 ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
                 ' -Pdeploy'\
@@ -640,7 +640,7 @@ def deploy
                   ' -B'\
                   ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                   ' -Dmaven.test.skip=false'\
-                  ' -DdeployAtEnd=true'\
+                  ' -DdeployAtEnd=false'\
                   " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                   ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
                   ' -Pdeploy', out: $stdout, err: :out)
@@ -676,7 +676,7 @@ def deploy
                     ' -B'\
                     ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                     ' -Dmaven.test.skip=false'\
-                    ' -DdeployAtEnd=true'\
+                    ' -DdeployAtEnd=false'\
                     " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                     ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
                     ' -Pdeploy'\
@@ -723,7 +723,7 @@ def deploy
                 ' -B'\
                 ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Dmaven.test.skip=true'\
-                ' -DdeployAtEnd=true'\
+                ' -DdeployAtEnd=false'\
                 " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                 ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
                 ' -Pdeploy'\
