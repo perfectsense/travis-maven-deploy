@@ -552,6 +552,16 @@ def module_release_version(module_path, tag_version, pr_version, build_number, i
   end
 end
 
+def s3deploy
+  ENV['DEPLOY_SOURCE_DIR'] = "#{ENV['TRAVIS_BUILD_DIR']}/express/site/target"
+
+  system('git clone https://github.com/perfectsense/travis-s3-deploy.git', out: $stdout, err: :out)
+  if $? != 0 then raise ArgumentError, 'Failed to clone travis-s3-deploy repo!' end
+
+  system('travis-s3-deploy/deploy.sh', out: $stdout, err: :out)
+  if $? != 0 then raise ArgumentError, 'Failed to deploy to S3!' end
+end
+
 def deploy
 
   puts "REBUILD: " + (ENV["REBUILD"] || "")
@@ -730,6 +740,8 @@ def deploy
                 " -pl parent,bom,grandparent,#{modified_modules.join(',')}", out: $stdout, err: :out)
 
           if $? != 0 then raise ArgumentError, 'Failed to deploy pull request snapshot build!' end
+
+          s3deploy
         else
           puts 'No modules to build...'
         end
