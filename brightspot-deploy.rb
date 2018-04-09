@@ -704,7 +704,8 @@ def deploy
                 ' -B'\
                 ' -Plibrary'\
                 ' -Dmaven.test.skip=false'\
-                " -pl parent,bom,grandparent,#{modified_modules.join(',')}", out: $stdout, err: :out)
+                " -pl parent,bom,grandparent,#{modified_modules.join(',')}"\
+                ' | grep -v "Downloaded\|Downloading\|CodeUtils\|Found sources in"', out: $stdout, err: :out)
 
           if $? != 0 then raise ArgumentError, 'Failed to install pull request snapshot build!' end
 
@@ -719,7 +720,8 @@ def deploy
                 " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                 ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
                 ' -Pdeploy'\
-                " -pl parent,bom,grandparent,#{modified_modules.join(',')}", out: $stdout, err: :out)
+                " -pl parent,bom,grandparent,#{modified_modules.join(',')}"\
+                ' | grep -v "Downloaded\|Downloading\|CodeUtils\|Found sources in"', out: $stdout, err: :out)
 
           if $? != 0 then raise ArgumentError, 'Failed to deploy pull request snapshot build!' end
         else
