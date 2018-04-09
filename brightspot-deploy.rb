@@ -583,6 +583,7 @@ def deploy
 
       system('mvn clean install'\
             ' -B'\
+            ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
             ' -Plibrary'\
             ' -Dmaven.test.skip=false', out: $stdout, err: :out)
 
@@ -599,6 +600,7 @@ def deploy
                 ' DEPLOY=true'\
                 ' mvn deploy'\
                 ' -B'\
+                ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Dmaven.test.skip=true'\
                 ' -DdeployAtEnd=true'\
                 " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
@@ -620,6 +622,7 @@ def deploy
 
           system('mvn clean install'\
                 ' -B'\
+                ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -pl .,parent,bom,grandparent', out: $stdout, err: :out)
 
           if $? != 0 then raise ArgumentError, 'Failed to prepare snapshot build!' end
@@ -635,6 +638,7 @@ def deploy
                   ' DEPLOY=true'\
                   ' mvn deploy'\
                   ' -B'\
+                  ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                   ' -Dmaven.test.skip=false'\
                   ' -DdeployAtEnd=true'\
                   " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
@@ -652,6 +656,7 @@ def deploy
 
               system('mvn clean install'\
                 ' -B'\
+                ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Dmaven.test.skip=true'\
                 " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}", out: $stdout, err: :out)
 
@@ -669,6 +674,7 @@ def deploy
                     ' DEPLOY=true'\
                     ' mvn deploy'\
                     ' -B'\
+                    ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                     ' -Dmaven.test.skip=false'\
                     ' -DdeployAtEnd=true'\
                     " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
@@ -702,6 +708,7 @@ def deploy
 
           system('mvn clean install'\
                 ' -B'\
+                ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Plibrary'\
                 ' -Dmaven.test.skip=false'\
                 " -pl parent,bom,grandparent,#{modified_modules.join(',')}", out: $stdout, err: :out)
@@ -714,6 +721,7 @@ def deploy
                 ' DEPLOY=true'\
                 ' mvn clean deploy'\
                 ' -B'\
+                ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Dmaven.test.skip=true'\
                 ' -DdeployAtEnd=true'\
                 " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
