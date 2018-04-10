@@ -430,13 +430,13 @@ def prepare_maven_release_versions(modified_modules, tag_version, pr_version, bu
   modified_artifacts = Set.new
 
   # Always add the root, parent, grandparent, and bom pom artifacts!
-  modified_artifacts.push(maven_module_info('.'))
-  modified_artifacts.push(maven_module_info('parent'))
-  modified_artifacts.push(maven_module_info('grandparent'))
-  modified_artifacts.push(maven_module_info('bom'))
+  modified_artifacts.add(maven_module_info('.'))
+  modified_artifacts.add(maven_module_info('parent'))
+  modified_artifacts.add(maven_module_info('grandparent'))
+  modified_artifacts.add(maven_module_info('bom'))
 
   modified_modules.each do |modified_module|
-    modified_artifacts.push(maven_module_info(modified_module))
+    modified_artifacts.add(maven_module_info(modified_module))
   end
 
   all_modules = maven_module_list(".", true)
