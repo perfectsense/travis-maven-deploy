@@ -427,10 +427,13 @@ end
 
 # Update pom.xml release versions
 def prepare_maven_release_versions(modified_modules, tag_version, pr_version, build_number)
-  modified_artifacts = Array.new
+  modified_artifacts = Set.new
 
-  # Always add the root pom artifact
+  # Always add the root, parent, grandparent, and bom pom artifacts!
   modified_artifacts.push(maven_module_info('.'))
+  modified_artifacts.push(maven_module_info('parent'))
+  modified_artifacts.push(maven_module_info('grandparent'))
+  modified_artifacts.push(maven_module_info('bom'))
 
   modified_modules.each do |modified_module|
     modified_artifacts.push(maven_module_info(modified_module))
