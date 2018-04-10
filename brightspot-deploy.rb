@@ -733,7 +733,6 @@ def deploy
                 ' -B'\
                 ' -Dmaven.test.skip=true'\
                 ' -DdeployAtEnd=true'\
-                " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                 ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
                 ' -Pdeploy'\
                 " -pl parent,bom,grandparent,#{modified_modules.join(',')}", out: $stdout, err: :out)
