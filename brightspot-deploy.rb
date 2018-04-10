@@ -581,8 +581,6 @@ def deploy
 
   if ENV["TRAVIS_REPO_SLUG"].to_s.start_with?("perfectsense/")
 
-    system('git fetch --unshallow', out: $stdout, err: :out)
-
     if not ENV["TRAVIS_TAG"].to_s.strip.empty?
       puts 'Preparing RELEASE version...'
 
