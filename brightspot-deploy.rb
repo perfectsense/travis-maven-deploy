@@ -620,6 +620,7 @@ def deploy
 
         if $? != 0 then raise ArgumentError, 'Failed to deploy release!' end
 
+        s3deploy
       else
         puts 'Nothing new to deploy to artifactory.'
       end
@@ -656,6 +657,7 @@ def deploy
 
             if $? != 0 then raise ArgumentError, 'Failed to deploy SNAPSHOT to artifactory!' end
 
+            s3deploy
           else
             modified_modules = get_project_diff_list(commit_range)
             puts "modified_modules: #{modified_modules.join(' ')}"
@@ -692,6 +694,7 @@ def deploy
 
               if $? != 0 then raise ArgumentError, 'Failed to deploy SNAPSHOT to artifactory!' end
 
+              s3deploy
             else
               puts 'No modules to deploy...'
             end
