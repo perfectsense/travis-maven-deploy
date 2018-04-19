@@ -421,13 +421,17 @@ end
 def prepare_release_versions(commit_range, tag_version, pr_version, build_number)
 
   if commit_range != nil && !commit_range.to_s.strip.empty?
-    modified_module_paths = get_project_diff_list(commit_range)
+    module_paths = get_project_diff_list(commit_range)
   else
-    modified_module_paths = maven_module_list('.', true)
+    module_paths = Array.new
+    all_modules = maven_module_list('.', true)
+    all_modules.each do |all_module|
+      module_paths.push(all_module.path)
+    end
   end
 
-  prepare_maven_release_versions(modified_module_paths, tag_version, pr_version, build_number)
-  prepare_node_release_versions(modified_module_paths, tag_version, pr_version, build_number)
+  prepare_maven_release_versions(module_paths, tag_version, pr_version, build_number)
+  prepare_node_release_versions(module_paths, tag_version, pr_version, build_number)
 end
 
 # Update pom.xml release versions
