@@ -161,7 +161,7 @@ def maven_module_list(path, recurse = false)
 
   maven_xpath_list(path, "/project/modules/module").each do |name|
 
-    module_list.push(name)
+    module_list.push(name.to_s)
 
     if recurse
       maven_module_list("#{path}/#{name}", true).each do |name2|
@@ -426,7 +426,7 @@ def prepare_release_versions(commit_range, tag_version, pr_version, build_number
     module_paths = Array.new
     all_modules = maven_module_list('.', true)
     all_modules.each do |all_module|
-      module_paths.push(all_module.path)
+      module_paths.push(all_module.to_s)
     end
   end
 
