@@ -432,6 +432,7 @@ def prepare_release_versions(commit_range, tag_version, pr_version, build_number
 
   prepare_maven_release_versions(module_paths, tag_version, pr_version, build_number)
   prepare_node_release_versions(module_paths, tag_version, pr_version, build_number)
+  prepare_s3deploy_versions(module_paths)
 end
 
 # Update pom.xml release versions
@@ -564,6 +565,53 @@ def module_release_version(module_path, tag_version, pr_version, build_number, i
   end
 end
 
+# If an express version has not been set already (because it wasn't in the list
+# of modified modules) then explicitly sets the express/site/pom.xml parent
+# to point to the current brightspot-parent (bypassing express-parent) to ensure
+# that the s3deploy function builds the express site WAR with the local
+# dependencies from this build.
+def prepare_s3deploy_versions(modified_modules)
+
+  unless modified_modules.include?('express/site')
+
+    File.open('parent/pom.xml') do |parent_pom_file|
+
+      parent_pom = Document.new(parent_pom_file)
+
+      parent_group_id = XPath.first(parent_pom, '/project/groupId/text()')
+      if parent_group_id == nil
+        parent_group_id = XPath.first(parent_pom, '/project/parent/groupId/text()')
+      end
+
+      parent_artifact_id = XPath.first(parent_pom, '/project/artifactId/text()')
+      parent_version = XPath.first(parent_pom, '/project/version/text()')
+
+      File.open('express/site/pom.xml') do |express_site_pom_file|
+
+        express_site_pom = Document.new(express_site_pom_file)
+
+        express_site_group_id_elmt = XPath.first(express_site_pom, '/project/parent/groupId')
+        express_site_artifact_id_elmt = XPath.first(express_site_pom, '/project/parent/artifactId')
+        express_site_version_elmt = XPath.first(express_site_pom, '/project/parent/version')
+        express_site_relative_path_elmt = XPath.first(express_site_pom, '/project/parent/relativePath')
+
+        express_site_group_id_elmt.text = parent_group_id
+        express_site_artifact_id_elmt.text = parent_artifact_id
+        express_site_version_elmt.text = parent_version
+        express_site_relative_path_elmt.text = '../../parent/pom.xml'
+
+        File.open('express/site/pom.xml', 'w') do |f|
+          formatter = REXML::Formatters::Default.new
+          formatter.write(express_site_pom, f)
+        end
+
+        puts "Set express/site/pom.xml parent to #{parent_group_id}:#{parent_artifact_id}:#{parent_version} for S3 Deploy."
+      end
+    end
+  end
+end
+
+# Deploys the express/site WAR file to S3 to power the /_deploy servlet.
 def s3deploy
   system('mvn -f express/site/pom.xml clean package'\
             ' -B'\
