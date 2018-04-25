@@ -565,17 +565,13 @@ def module_release_version(module_path, tag_version, pr_version, build_number, i
 end
 
 def s3deploy
-  deploy_source_dir = "#{ENV['TRAVIS_BUILD_DIR']}/express/site/target"
+  ENV['DEPLOY_SOURCE_DIR'] = "#{ENV['TRAVIS_BUILD_DIR']}/express/site/target"
 
-  if File.exist?(deploy_source_dir)
-    ENV['DEPLOY_SOURCE_DIR'] = deploy_source_dir
+  system('git clone https://github.com/perfectsense/travis-s3-deploy.git', out: $stdout, err: :out)
+  if $? != 0 then raise ArgumentError, 'Failed to clone travis-s3-deploy repo!' end
 
-    system('git clone https://github.com/perfectsense/travis-s3-deploy.git', out: $stdout, err: :out)
-    if $? != 0 then raise ArgumentError, 'Failed to clone travis-s3-deploy repo!' end
-
-    system('travis-s3-deploy/deploy.sh', out: $stdout, err: :out)
-    if $? != 0 then raise ArgumentError, 'Failed to deploy to S3!' end
-  end
+  system('travis-s3-deploy/deploy.sh', out: $stdout, err: :out)
+  if $? != 0 then raise ArgumentError, 'Failed to deploy to S3!' end
 end
 
 def deploy
