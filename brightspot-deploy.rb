@@ -565,6 +565,13 @@ def module_release_version(module_path, tag_version, pr_version, build_number, i
 end
 
 def s3deploy
+  system('mvn -f express/site/pom.xml clean package'\
+            ' -B'\
+            ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
+            ' -Dmaven.test.skip=false', out: $stdout, err: :out)
+
+  if $? != 0 then raise ArgumentError, 'Failed to compile the Express Site WAR file for S3 deploy!' end
+
   ENV['DEPLOY_SOURCE_DIR'] = "#{ENV['TRAVIS_BUILD_DIR']}/express/site/target"
 
   system('git clone https://github.com/perfectsense/travis-s3-deploy.git', out: $stdout, err: :out)
