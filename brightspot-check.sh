@@ -9,7 +9,7 @@ if grep -l --exclude=./bom/pom.xml --exclude=./dari/grandparent/pom.xml '<depend
     exit 1
 fi
 
-if xml sel -N m='http://maven.apache.org/POM/4.0.0' -t -i 'count(/m:project/m:dependencies/m:dependency/m:version) > 0' -f -n $POM_FILES; then
+if xmlstarlet sel -N m='http://maven.apache.org/POM/4.0.0' -t -i 'count(/m:project/m:dependencies/m:dependency/m:version) > 0' -f -n $POM_FILES; then
     echo 'Please define all dependency versions inside <dependencyManagement> in dari/grandparent/pom.xml'
     exit 1
 fi
