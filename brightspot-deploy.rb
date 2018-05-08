@@ -635,11 +635,7 @@ def s3deploy
 end
 
 def sonar_goals(phases)
-  sonar_login = ENV["SONAR_LOGIN"]
-  !sonar_login ? phases : "org.jacoco:jacoco-maven-plugin:prepare-agent #{phases} sonar:sonar"\
-        ' -Dsonar.host.url=https://sonarcloud.io'\
-        ' -Dsonar.organization=perfectsense'\
-        " -Dsonar.login=#{sonar_login}"
+  ENV["SONAR_TOKEN"] ? "org.jacoco:jacoco-maven-plugin:prepare-agent #{phases} sonar:sonar" : phases
 end
 
 def deploy
