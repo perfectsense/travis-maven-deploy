@@ -634,6 +634,17 @@ def s3deploy
   if $? != 0 then raise ArgumentError, 'Failed to deploy to S3!' end
 end
 
+def system_sonar
+  sonar_login = ENV["SONAR_LOGIN"]
+
+  if sonar_login
+    system_stdout('mvn sonar:sonar'\
+        ' -Dsonar.host.url=https://sonarcloud.io'\
+        ' -Dsonar.organization=perfectsense'\
+        " -Dsonar.login=#{sonar_login}")
+  end
+end
+
 def deploy
 
   puts "REBUILD: " + (ENV["REBUILD"] || "")
@@ -716,7 +727,7 @@ def deploy
 
             system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
                   ' DEPLOY=true'\
-                  ' mvn deploy'\
+                  ' mvn org.jacoco:jacoco-maven-plugin:prepare-agent deploy'\
                   ' -B'\
                   ' -Dmaven.test.skip=false'\
                   ' -DdeployAtEnd=false'\
@@ -726,6 +737,7 @@ def deploy
 
             if $? != 0 then raise ArgumentError, 'Failed to deploy SNAPSHOT to artifactory!' end
 
+            system_sonar
             s3deploy
           else
             modified_modules = get_project_diff_list(commit_range)
@@ -752,7 +764,7 @@ def deploy
 
               system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
                     ' DEPLOY=true'\
-                    ' mvn deploy'\
+                    ' mvn org.jacoco:jacoco-maven-plugin:prepare-agent deploy'\
                     ' -B'\
                     ' -Dmaven.test.skip=false'\
                     ' -DdeployAtEnd=false'\
@@ -763,6 +775,7 @@ def deploy
 
               if $? != 0 then raise ArgumentError, 'Failed to deploy SNAPSHOT to artifactory!' end
 
+              system_sonar
               s3deploy
             else
               puts 'No modules to deploy...'
@@ -786,7 +799,7 @@ def deploy
 
           puts 'Installing pull request snapshot...'
 
-          system_stdout('mvn clean install'\
+          system_stdout('mvn org.jacoco:jacoco-maven-plugin:prepare-agent clean install'\
                 ' -B'\
                 ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Plibrary'\
@@ -794,6 +807,8 @@ def deploy
                 " -pl parent,bom,grandparent,#{modified_modules.join(',')}")
 
           if $? != 0 then raise ArgumentError, 'Failed to install pull request snapshot build!' end
+
+          system_sonar
 
           puts 'Deploying pull request snapshot...'
 
