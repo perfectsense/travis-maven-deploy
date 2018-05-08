@@ -638,7 +638,7 @@ def system_sonar
   sonar_login = ENV["SONAR_LOGIN"]
 
   if sonar_login
-    system_stdout('mvn sonar:sonar'\
+    system_stdout('mvn -B sonar:sonar'\
         ' -Dsonar.host.url=https://sonarcloud.io'\
         ' -Dsonar.organization=perfectsense'\
         " -Dsonar.login=#{sonar_login}")
