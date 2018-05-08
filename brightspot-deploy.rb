@@ -392,6 +392,11 @@ def verify_no_release_snapshots
 
 end
 
+def system_stdout(command)
+  puts "COMMAND: #{command}"
+  system(command, out: $stdout, err: :out)
+end
+
 # One off function that ensures that the express archetype has correct versions
 # in it since it's not updated automatically by the normal diff / versioning
 # scripts.
@@ -404,10 +409,10 @@ def update_archetype_versions
     express_npm_version = JSON.parse(File.read('express/package.json'))['version']
     styleguide_npm_version = JSON.parse(File.read('styleguide/package.json'))['version']
 
-    system("sed -i.bak 's|${brightspot-version}|'#{brightspot_mvn_version}'|g' #{express_archetype_path}/pom.xml", out: $stdout, err: :out)
+    system_stdout("sed -i.bak 's|${brightspot-version}|'#{brightspot_mvn_version}'|g' #{express_archetype_path}/pom.xml")
     if $? != 0 then raise ArgumentError, "Failed to update archetype pom.xml!" end
 
-    system("sed -i.bak 's|${express-version}|'#{express_npm_version}'|g; s|${styleguide-version}|'#{styleguide_npm_version}'|g' #{express_archetype_path}/package.json", out: $stdout, err: :out)
+    system_stdout("sed -i.bak 's|${express-version}|'#{express_npm_version}'|g; s|${styleguide-version}|'#{styleguide_npm_version}'|g' #{express_archetype_path}/package.json")
     if $? != 0 then raise ArgumentError, "Failed to update archetype package.json!" end
 
     puts "Updated express archetype dependency versions."
@@ -613,19 +618,19 @@ end
 
 # Deploys the express/site WAR file to S3 to power the /_deploy servlet.
 def s3deploy
-  system('mvn -f express/site/pom.xml clean package'\
+  system_stdout('mvn -f express/site/pom.xml clean package'\
             ' -B'\
             ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
-            ' -Dmaven.test.skip=false', out: $stdout, err: :out)
+            ' -Dmaven.test.skip=false')
 
   if $? != 0 then raise ArgumentError, 'Failed to compile the Express Site WAR file for S3 deploy!' end
 
   ENV['DEPLOY_SOURCE_DIR'] = "#{ENV['TRAVIS_BUILD_DIR']}/express/site/target"
 
-  system('git clone https://github.com/perfectsense/travis-s3-deploy.git', out: $stdout, err: :out)
+  system_stdout('git clone https://github.com/perfectsense/travis-s3-deploy.git')
   if $? != 0 then raise ArgumentError, 'Failed to clone travis-s3-deploy repo!' end
 
-  system('travis-s3-deploy/deploy.sh', out: $stdout, err: :out)
+  system_stdout('travis-s3-deploy/deploy.sh')
   if $? != 0 then raise ArgumentError, 'Failed to deploy to S3!' end
 end
 
@@ -656,11 +661,11 @@ def deploy
       verify_no_release_snapshots
       verify_bom_dependencies
 
-      system('mvn clean install'\
+      system_stdout('mvn clean install'\
             ' -B'\
             ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
             ' -Plibrary'\
-            ' -Dmaven.test.skip=false', out: $stdout, err: :out)
+            ' -Dmaven.test.skip=false')
 
       if $? != 0 then raise ArgumentError, 'Failed to install release!' end
 
@@ -671,7 +676,7 @@ def deploy
       if newly_versioned_modules.length > 0
         puts "Deploying #{newly_versioned_modules.length} artifacts to artifactory."
 
-        system("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
+        system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
                 ' DEPLOY=true'\
                 ' mvn deploy'\
                 ' -B'\
@@ -680,7 +685,7 @@ def deploy
                 " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                 ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
                 ' -Pdeploy'\
-                " -pl #{newly_versioned_modules.join(",")}", out: $stdout, err: :out)
+                " -pl #{newly_versioned_modules.join(",")}")
 
         if $? != 0 then raise ArgumentError, 'Failed to deploy release!' end
 
@@ -695,10 +700,10 @@ def deploy
         if ENV["TRAVIS_BRANCH"].to_s.start_with?('release/*') ||
             ENV["TRAVIS_BRANCH"].to_s.eql?('master')
 
-          system('mvn clean install'\
+          system_stdout('mvn clean install'\
                 ' -B'\
                 ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
-                ' -pl .,parent,bom,grandparent', out: $stdout, err: :out)
+                ' -pl .,parent,bom,grandparent')
 
           if $? != 0 then raise ArgumentError, 'Failed to prepare snapshot build!' end
 
@@ -709,7 +714,7 @@ def deploy
             update_archetype_versions
             verify_bom_dependencies
 
-            system("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
+            system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
                   ' DEPLOY=true'\
                   ' mvn deploy'\
                   ' -B'\
@@ -717,7 +722,7 @@ def deploy
                   ' -DdeployAtEnd=false'\
                   " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                   ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
-                  ' -Pdeploy', out: $stdout, err: :out)
+                  ' -Pdeploy')
 
             if $? != 0 then raise ArgumentError, 'Failed to deploy SNAPSHOT to artifactory!' end
 
@@ -729,11 +734,11 @@ def deploy
             if is_pom_modified(commit_range)
               puts 'Detected changes to pom.xml! Performing pre-build to locally resolve any new dependency versions.'
 
-              system('mvn clean install'\
+              system_stdout('mvn clean install'\
                 ' -B'\
                 ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Dmaven.test.skip=true'\
-                " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}", out: $stdout, err: :out)
+                " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}")
 
               if $? != 0 then raise ArgumentError, 'Failed to pre-install SNAPSHOT build!' end
             end
@@ -745,7 +750,7 @@ def deploy
               update_archetype_versions
               verify_bom_dependencies
 
-              system("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
+              system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
                     ' DEPLOY=true'\
                     ' mvn deploy'\
                     ' -B'\
@@ -754,7 +759,7 @@ def deploy
                     " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                     ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
                     ' -Pdeploy'\
-                    " -pl #{modified_modules.join(',')}", out: $stdout, err: :out)
+                    " -pl #{modified_modules.join(',')}")
 
               if $? != 0 then raise ArgumentError, 'Failed to deploy SNAPSHOT to artifactory!' end
 
@@ -781,18 +786,18 @@ def deploy
 
           puts 'Installing pull request snapshot...'
 
-          system('mvn clean install'\
+          system_stdout('mvn clean install'\
                 ' -B'\
                 ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Plibrary'\
                 ' -Dmaven.test.skip=false'\
-                " -pl parent,bom,grandparent,#{modified_modules.join(',')}", out: $stdout, err: :out)
+                " -pl parent,bom,grandparent,#{modified_modules.join(',')}")
 
           if $? != 0 then raise ArgumentError, 'Failed to install pull request snapshot build!' end
 
           puts 'Deploying pull request snapshot...'
 
-          system("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
+          system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
                 ' DEPLOY=true'\
                 ' mvn clean deploy'\
                 ' -B'\
@@ -801,7 +806,7 @@ def deploy
                 " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                 ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
                 ' -Pdeploy'\
-                " -pl parent,bom,grandparent,#{modified_modules.join(',')}", out: $stdout, err: :out)
+                " -pl parent,bom,grandparent,#{modified_modules.join(',')}")
 
           if $? != 0 then raise ArgumentError, 'Failed to deploy pull request snapshot build!' end
 
