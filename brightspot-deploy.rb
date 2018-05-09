@@ -647,7 +647,7 @@ def deploy
   puts "TRAVIS_PULL_REQUEST: " + (ENV["TRAVIS_PULL_REQUEST"] || "")
   puts "TRAVIS_BRANCH: " + (ENV["TRAVIS_BRANCH"] || "")
 
-  ENV["MAVEN_OPTS"] = "-Xmx3000m -XX:MaxDirectMemorySize=2000m"
+  ENV["MAVEN_OPTS"] = "-Xmx2g"
 
   rebuild = ENV["REBUILD"].to_s.casecmp("true") == 0
   commit_range = ENV["TRAVIS_COMMIT_RANGE"]
