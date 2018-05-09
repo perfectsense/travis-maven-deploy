@@ -704,74 +704,25 @@ def deploy
         if ENV["TRAVIS_BRANCH"].to_s.start_with?('release/*') ||
             ENV["TRAVIS_BRANCH"].to_s.eql?('master')
 
-          system_stdout('mvn clean install'\
-                ' -B'\
-                ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
-                ' -pl .,parent,bom,grandparent')
+          puts 'Deploying SNAPSHOT to Maven repository...'
 
-          if $? != 0 then raise ArgumentError, 'Failed to prepare snapshot build!' end
+          prepare_release_versions(commit_range, tag_version, pr_version, build_number)
+          update_archetype_versions
+          verify_bom_dependencies
 
-          if rebuild
-            puts 'Deploying SNAPSHOT to Maven repository...'
+          system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
+              ' DEPLOY=true'\
+              " mvn #{sonar_goals('deploy')}"\
+              ' -B'\
+              ' -Dmaven.test.skip=false'\
+              ' -DdeployAtEnd=false'\
+              " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
+              ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
+              ' -Pdeploy')
 
-            prepare_release_versions(commit_range, tag_version, pr_version, build_number)
-            update_archetype_versions
-            verify_bom_dependencies
+          if $? != 0 then raise ArgumentError, 'Failed to deploy SNAPSHOT to artifactory!' end
 
-            system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
-                  ' DEPLOY=true'\
-                  " mvn #{sonar_goals('deploy')}"\
-                  ' -B'\
-                  ' -Dmaven.test.skip=false'\
-                  ' -DdeployAtEnd=false'\
-                  " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
-                  ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
-                  ' -Pdeploy')
-
-            if $? != 0 then raise ArgumentError, 'Failed to deploy SNAPSHOT to artifactory!' end
-
-            s3deploy
-          else
-            modified_modules = get_project_diff_list(commit_range)
-            puts "modified_modules: #{modified_modules.join(' ')}"
-
-            if is_pom_modified(commit_range)
-              puts 'Detected changes to pom.xml! Performing pre-build to locally resolve any new dependency versions.'
-
-              system_stdout('mvn clean install'\
-                ' -B'\
-                ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
-                ' -Dmaven.test.skip=true'\
-                " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}")
-
-              if $? != 0 then raise ArgumentError, 'Failed to pre-install SNAPSHOT build!' end
-            end
-
-            if modified_modules.length > 0
-              puts 'Deploying SNAPSHOT to Maven repository...'
-
-              prepare_release_versions(commit_range, tag_version, pr_version, build_number)
-              update_archetype_versions
-              verify_bom_dependencies
-
-              system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
-                    ' DEPLOY=true'\
-                    ' mvn deploy'\
-                    ' -B'\
-                    ' -Dmaven.test.skip=false'\
-                    ' -DdeployAtEnd=false'\
-                    " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
-                    ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
-                    ' -Pdeploy'\
-                    " -pl #{modified_modules.join(',')}")
-
-              if $? != 0 then raise ArgumentError, 'Failed to deploy SNAPSHOT to artifactory!' end
-
-              s3deploy
-            else
-              puts 'No modules to deploy...'
-            end
-          end
+          s3deploy
 
         else
           puts 'Branch is not associated with a PR, nothing to do...'
