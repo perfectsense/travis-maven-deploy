@@ -756,14 +756,14 @@ def deploy
 
               system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
                     ' DEPLOY=true'\
-                    " mvn #{sonar_goals('deploy')}"\
+                    ' mvn deploy'\
                     ' -B'\
                     ' -Dmaven.test.skip=false'\
                     ' -DdeployAtEnd=false'\
                     " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                     ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
                     ' -Pdeploy'\
-                    " -pl .,#{modified_modules.join(',')}")
+                    " -pl #{modified_modules.join(',')}")
 
               if $? != 0 then raise ArgumentError, 'Failed to deploy SNAPSHOT to artifactory!' end
 
