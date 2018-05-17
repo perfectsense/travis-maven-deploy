@@ -733,28 +733,23 @@ def deploy
         puts "modified_modules: #{modified_modules.join(" ")}"
 
         if modified_modules.length > 0
-          puts 'Preparing pull request snapshot...'
+          puts 'Preparing pull request...'
 
-          prepare_release_versions(commit_range, tag_version, pr_version, build_number)
+          prepare_release_versions(commit_range, tag_version, '', build_number)
           update_archetype_versions
           verify_bom_dependencies
 
-          puts 'Deploying pull request snapshot...'
+          puts 'Building pull request...'
 
-          system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
-                ' DEPLOY=true'\
-                " mvn #{sonar_goals('deploy')}"\
+          system_stdout(
+                " mvn #{sonar_goals('verify')}"\
                 ' -B'\
                 ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Plibrary'\
                 ' -Dmaven.test.skip=false'\
-                ' -DdeployAtEnd=false'\
-                " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
-                ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
-                ' -Pdeploy'\
                 " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}")
 
-          if $? != 0 then raise ArgumentError, 'Failed to deploy pull request snapshot build!' end
+          if $? != 0 then raise ArgumentError, 'Failed to build pull request!' end
 
           s3deploy
         else
