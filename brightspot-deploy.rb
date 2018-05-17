@@ -742,7 +742,7 @@ def deploy
           puts 'Building pull request...'
 
           system_stdout(
-                " mvn #{sonar_goals('verify')}"\
+                " mvn #{sonar_goals('install')}"\
                 ' -B'\
                 ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Plibrary'\
