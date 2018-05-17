@@ -618,7 +618,7 @@ end
 
 # Deploys the express/site WAR file to S3 to power the /_deploy servlet.
 def s3deploy
-  system_stdout('mvn -o -f express/site/pom.xml clean package'\
+  system_stdout('mvn -o -f express/site/pom.xml package'\
             ' -B'\
             ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
             ' -Dmaven.test.skip=false')
