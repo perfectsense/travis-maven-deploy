@@ -710,6 +710,11 @@ def deploy
           update_archetype_versions
           verify_bom_dependencies
 
+          system_stdout(
+                'mvn -f express/site/pom.xml dependency:go-offline'\
+                ' -B'\
+                ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn')
+
           system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
               ' DEPLOY=true'\
               " mvn #{sonar_goals('deploy')}"\
