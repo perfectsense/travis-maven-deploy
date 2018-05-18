@@ -680,6 +680,11 @@ def deploy
       if newly_versioned_modules.length > 0
         puts "Deploying #{newly_versioned_modules.length} artifacts to artifactory."
 
+        system_stdout(
+          'mvn -f express/site/pom.xml dependency:go-offline'\
+          ' -B'\
+          ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn')
+
         system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
                 ' DEPLOY=true'\
                 ' mvn deploy'\
@@ -745,6 +750,11 @@ def deploy
           verify_bom_dependencies
 
           puts 'Building pull request...'
+
+          system_stdout(
+            'mvn -f express/site/pom.xml dependency:go-offline'\
+            ' -B'\
+            ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn')
 
           system_stdout(
                 " mvn #{sonar_goals('install')}"\
