@@ -635,7 +635,7 @@ end
 
 # Deploys the express/site WAR file to S3 to power the /_deploy servlet.
 def s3deploy
-  system_stdout('mvn -o -f express/site/pom.xml package'\
+  system_stdout('mvn -f express/site/pom.xml package'\
             ' -B'\
             ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
             ' -Dmaven.test.skip=false')
@@ -697,11 +697,6 @@ def deploy
       if newly_versioned_modules.length > 0
         puts "Deploying #{newly_versioned_modules.length} artifacts to artifactory."
 
-        system_stdout(
-          'mvn -f express/site/pom.xml dependency:go-offline'\
-          ' -B'\
-          ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn')
-
         system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
                 ' DEPLOY=true'\
                 ' mvn deploy'\
@@ -731,11 +726,6 @@ def deploy
           prepare_release_versions(commit_range, tag_version, pr_version, build_number)
           update_archetype_versions
           verify_bom_dependencies
-
-          system_stdout(
-                'mvn dependency:go-offline'\
-                ' -B'\
-                ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn')
 
           system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
               ' DEPLOY=true'\
