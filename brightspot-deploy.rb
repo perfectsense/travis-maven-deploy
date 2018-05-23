@@ -759,11 +759,6 @@ def deploy
           puts 'Building pull request...'
 
           system_stdout(
-            'mvn -f express/site/pom.xml dependency:go-offline'\
-            ' -B'\
-            ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn')
-
-          system_stdout(
                 " mvn #{sonar_goals('install')}"\
                 ' -B'\
                 ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
