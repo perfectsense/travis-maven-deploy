@@ -562,24 +562,7 @@ def module_release_version(module_path, tag_version, pr_version, build_number, i
     end
 
   else
-    if ENV["TRAVIS_BRANCH"].to_s.start_with?('release/')
-      release_version = ENV["TRAVIS_BRANCH"].to_s[8..-1]
-
-      if is_node_module
-        if release_version.split('.').length < 3
-          release_version = release_version + '.0'
-        end
-
-        return "#{release_version}-SNAPSHOT.#{build_number}"
-
-      elsif module_path == '' || module_path == '.' || module_path == 'bom' || module_path == 'parent' || module_path == 'grandparent'
-        return "#{release_version}-SNAPSHOT"
-
-      else
-        return nil
-      end
-
-    elsif is_node_module
+    if is_node_module
       return "#{old_version.major_number}.#{old_version.minor_number}.0-SNAPSHOT.#{build_number}"
     else
       return nil
@@ -718,8 +701,7 @@ def deploy
     else
       if ENV["TRAVIS_PULL_REQUEST"].to_s.eql?('false')
 
-        if ENV["TRAVIS_BRANCH"].to_s.start_with?('release/') ||
-            ENV["TRAVIS_BRANCH"].to_s.eql?('master')
+        if ENV["TRAVIS_BRANCH"].to_s.eql?('master')
 
           puts 'Deploying SNAPSHOT to Maven repository...'
 
