@@ -645,6 +645,7 @@ def deploy
   puts "TRAVIS_TAG: " + (ENV["TRAVIS_TAG"] || "")
   puts "TRAVIS_REPO_SLUG: " + (ENV["TRAVIS_REPO_SLUG"] || "")
   puts "TRAVIS_PULL_REQUEST: " + (ENV["TRAVIS_PULL_REQUEST"] || "")
+  puts "TRAVIS_PULL_REQUEST_BRANCH: " + (ENV["TRAVIS_PULL_REQUEST_BRANCH"] || "")
   puts "TRAVIS_BRANCH: " + (ENV["TRAVIS_BRANCH"] || "")
 
   ENV["MAVEN_OPTS"] = "-Xmx2g"
@@ -729,7 +730,7 @@ def deploy
 
       else
 
-        if ENV["TRAVIS_BRANCH"].to_s.start_with?('feature/') && ENV["TRAVIS_BRANCH"].to_s.end_with?('-3.3')
+        if ENV["TRAVIS_PULL_REQUEST_BRANCH"].to_s.start_with?('pr/')
 
           modified_modules = get_project_diff_list(commit_range)
           puts "modified_modules: #{modified_modules.join(" ")}"
