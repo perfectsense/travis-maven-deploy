@@ -730,7 +730,7 @@ def deploy
 
       else
 
-        if ENV["TRAVIS_PULL_REQUEST_BRANCH"].to_s.start_with?('pr/')
+        if ENV["TRAVIS_PULL_REQUEST_BRANCH"].to_s.start_with?('pr-snapshot/')
 
           modified_modules = get_project_diff_list(commit_range)
           puts "modified_modules: #{modified_modules.join(" ")}"
