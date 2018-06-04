@@ -728,31 +728,68 @@ def deploy
         end
 
       else
-        modified_modules = get_project_diff_list(commit_range)
-        puts "modified_modules: #{modified_modules.join(" ")}"
 
-        if modified_modules.length > 0
-          puts 'Preparing pull request...'
+        if ENV["TRAVIS_BRANCH"].to_s.start_with?('feature/') && ENV["TRAVIS_BRANCH"].to_s.end_with?('-3.3')
 
-          prepare_release_versions(commit_range, tag_version, '', build_number)
-          update_archetype_versions
-          verify_bom_dependencies
+          modified_modules = get_project_diff_list(commit_range)
+          puts "modified_modules: #{modified_modules.join(" ")}"
 
-          puts 'Building pull request...'
+          if modified_modules.length > 0
+            puts 'Preparing pull request snapshot...'
 
-          system_stdout(
-                " mvn #{sonar_goals('install')}"\
+            prepare_release_versions(commit_range, tag_version, pr_version, build_number)
+            update_archetype_versions
+            verify_bom_dependencies
+
+            puts 'Deploying pull request snapshot...'
+
+            system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
+                ' DEPLOY=true'\
+                " mvn #{sonar_goals('deploy')}"\
                 ' -B'\
                 ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Plibrary'\
                 ' -Dmaven.test.skip=false'\
+                ' -DdeployAtEnd=false'\
+                " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
+                ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
+                ' -Pdeploy'\
                 " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}")
 
-          if $? != 0 then raise ArgumentError, 'Failed to build pull request!' end
+            if $? != 0 then raise ArgumentError, 'Failed to deploy pull request snapshot build!' end
 
-          s3deploy
+            s3deploy
+          else
+            puts 'No modules to build...'
+          end
+
         else
-          puts 'No modules to build...'
+          modified_modules = get_project_diff_list(commit_range)
+          puts "modified_modules: #{modified_modules.join(" ")}"
+
+          if modified_modules.length > 0
+            puts 'Preparing pull request...'
+
+            prepare_release_versions(commit_range, tag_version, '', build_number)
+            update_archetype_versions
+            verify_bom_dependencies
+
+            puts 'Building pull request...'
+
+            system_stdout(
+                  " mvn #{sonar_goals('install')}"\
+                  ' -B'\
+                  ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
+                  ' -Plibrary'\
+                  ' -Dmaven.test.skip=false'\
+                  " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}")
+
+            if $? != 0 then raise ArgumentError, 'Failed to build pull request!' end
+
+            s3deploy
+          else
+            puts 'No modules to build...'
+          end
         end
 
       end
