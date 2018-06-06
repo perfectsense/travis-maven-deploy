@@ -425,6 +425,8 @@ end
 # Updates all build config files (pom.xml & package.json) to have their new release versions set.
 def prepare_release_versions(commit_range, tag_version, pr_version, build_number)
 
+  system_stdout('git fetch --unshallow')
+
   if commit_range != nil && !commit_range.to_s.strip.empty?
     module_paths = get_project_diff_list(commit_range)
   else
