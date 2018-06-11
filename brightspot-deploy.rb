@@ -744,15 +744,24 @@ def deploy
             update_archetype_versions
             verify_bom_dependencies
 
-            puts 'Deploying pull request snapshot...'
+            puts 'Installing pull request snapshot...'
 
-            system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
-                ' DEPLOY=true'\
-                " mvn #{sonar_goals('deploy')}"\
+            system_stdout("mvn #{sonar_goals('clean install')}"\
                 ' -B'\
                 ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Plibrary'\
                 ' -Dmaven.test.skip=false'\
+                " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}")
+
+            if $? != 0 then raise ArgumentError, 'Failed to install pull request snapshot build!' end
+
+            puts 'Deploying pull request snapshot...'
+
+            system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
+                ' DEPLOY=true'\
+                ' mvn clean deploy'\
+                ' -B'\
+                ' -Dmaven.test.skip=true'\
                 ' -DdeployAtEnd=false'\
                 " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                 ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
