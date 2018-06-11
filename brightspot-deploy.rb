@@ -2,6 +2,7 @@
 
 require 'rexml/document'
 require 'json'
+require 'open-uri'
 include REXML
 
 $stdout.sync = true
@@ -423,7 +424,7 @@ def update_archetype_versions
 end
 
 # Updates all build config files (pom.xml & package.json) to have their new release versions set.
-def prepare_release_versions(commit_range, tag_version, pr_version, build_number)
+def prepare_release_versions(commit_range, tag_version, pr_version, build_number, lock_snapshots)
 
   system_stdout('git fetch --unshallow')
 
@@ -437,13 +438,12 @@ def prepare_release_versions(commit_range, tag_version, pr_version, build_number
     end
   end
 
-  prepare_maven_release_versions(module_paths, tag_version, pr_version, build_number)
-  prepare_node_release_versions(module_paths, tag_version, pr_version, build_number)
+  prepare_maven_node_release_versions(module_paths, tag_version, pr_version, build_number, lock_snapshots)
   prepare_s3deploy_versions(module_paths)
 end
 
 # Update pom.xml release versions
-def prepare_maven_release_versions(modified_modules, tag_version, pr_version, build_number)
+def prepare_maven_node_release_versions(modified_modules, tag_version, pr_version, build_number, lock_snapshots)
   modified_artifacts = Set.new
 
   # Always add the root, parent, grandparent, and bom pom artifacts!
@@ -460,7 +460,35 @@ def prepare_maven_release_versions(modified_modules, tag_version, pr_version, bu
   # Always update the root pom
   all_modules.push('.')
 
+  bom_deps_hash = Hash.new
+  if lock_snapshots
+    latest_tag_version = `git describe --tags --abbrev=0`.to_s.strip
+
+    puts "Locking SNAPSHOT versions to release #{latest_tag_version}..."
+
+    # Remove leading v
+    if latest_tag_version.start_with?('v')
+      latest_tag_version = latest_tag_version[1..-1]
+    end
+
+    bom = Document.new(open("https://artifactory.psdops.com/psddev-releases/com/psddev/brightspot-bom/#{latest_tag_version}/brightspot-bom-#{latest_tag_version}.pom"))
+
+    XPath.each(bom, '//dependency') do |bom_dep|
+
+      bom_dep_group_id = XPath.first(bom_dep, "groupId/text()")
+      bom_dep_artifact_id = XPath.first(bom_dep, "artifactId/text()")
+      bom_dep_version = XPath.first(bom_dep, "version/text()")
+
+      bom_deps_hash["#{bom_dep_group_id}:#{bom_dep_artifact_id}"] = bom_dep_version
+    end
+
+  end
+
   all_modules.each do |all_module|
+
+    # ---------------------
+    # Handle Maven Versions
+    # ---------------------
 
     pom_modified = false
     pom = nil
@@ -469,6 +497,7 @@ def prepare_maven_release_versions(modified_modules, tag_version, pr_version, bu
       pom = Document.new(pom_file)
 
       XPath.each(pom, "//dependency | //plugin | //parent | /project") do |dep|
+        dep_modified = false
 
         group_id = XPath.first(dep, "groupId/text()")
         if group_id == nil && dep.name() == 'project'
@@ -487,9 +516,23 @@ def prepare_maven_release_versions(modified_modules, tag_version, pr_version, bu
             if release_version != nil
               version_elmt.text = release_version
               pom_modified = true
+              dep_modified = true
 
               puts "Set #{all_module}/pom.xml #{dep.name()} #{group_id}:#{artifact_id}:#{old_version} to version #{release_version}."
             end
+          end
+        end
+
+        # If snapshots need to be locked
+        if lock_snapshots && !dep_modified && version_elmt != nil && version_elmt.text.end_with?('-SNAPSHOT')
+          old_version = version_elmt.text
+          release_version = bom_deps_hash["#{group_id}:#{artifact_id}"]
+
+          if release_version != nil
+            version_elmt.text = release_version
+            pom_modified = true
+
+            puts "Set #{all_module}/pom.xml #{dep.name()} #{group_id}:#{artifact_id}:#{old_version} to version #{release_version}."
           end
         end
       end
@@ -501,28 +544,60 @@ def prepare_maven_release_versions(modified_modules, tag_version, pr_version, bu
         formatter.write(pom, f)
       end
     end
-  end
-end
 
-# Update package.json release versions
-def prepare_node_release_versions(modified_modules, tag_version, pr_version, build_number)
-  modified_modules.each do |modified_module|
-    if File.file?("#{modified_module}/package.json")
+    # --------------------
+    # Handle Node Versions
+    # --------------------
 
-      new_version = module_release_version(modified_module, tag_version, pr_version, build_number, true)
+    if File.file?("#{all_module}/package.json")
 
-      if new_version != nil
-        package_json = JSON.parse(File.read("#{modified_module}/package.json"))
-        old_version = package_json['version']
-        package_json['version'] = new_version
+      updated_node_module = false
 
-        puts "Set #{modified_module}/package.json version #{old_version} to #{new_version}."
+      # Update node release versions
+      if modified_modules.include?(all_module)
 
-        File.open("#{modified_module}/package.json", 'w') do |f|
-          f.write(JSON.pretty_generate(package_json))
+        new_version = module_release_version(all_module, tag_version, pr_version, build_number, true)
+
+        if new_version != nil
+          package_json = JSON.parse(File.read("#{all_module}/package.json"))
+          old_version = package_json['version']
+          package_json['version'] = new_version
+          updated_node_module = true
+
+          puts "Set #{all_module}/package.json version #{old_version} to #{new_version}."
+
+          File.open("#{all_module}/package.json", 'w') do |f|
+            f.write(JSON.pretty_generate(package_json))
+          end
         end
       end
+
+      # If snapshots need to be locked, just grab the version from this module's
+      # pom version since it will have just been updated in the Maven step above.
+      if lock_snapshots && !updated_node_module
+
+        package_json = JSON.parse(File.read("#{all_module}/package.json"))
+        old_version = package_json['version']
+
+        if old_version.end_with?('-SNAPSHOT')
+
+          File.open("#{all_module}/pom.xml") do |pom_file|
+            pom = Document.new(pom_file)
+            new_version = XPath.first(pom, '/project/version/text()')
+            package_json['version'] = new_version
+
+            puts "Set #{all_module}/package.json version #{old_version} to #{new_version}."
+
+            File.open("#{all_module}/package.json", 'w') do |f|
+              f.write(JSON.pretty_generate(package_json))
+            end
+
+          end
+        end
+      end
+
     end
+
   end
 end
 
@@ -663,7 +738,7 @@ def deploy
     if not ENV["TRAVIS_TAG"].to_s.strip.empty?
       puts 'Preparing RELEASE version...'
 
-      prepare_release_versions(commit_range, tag_version, pr_version, build_number)
+      prepare_release_versions(commit_range, tag_version, pr_version, build_number, false)
       update_archetype_versions
       verify_no_release_snapshots
       verify_bom_dependencies
@@ -708,7 +783,7 @@ def deploy
 
           puts 'Deploying SNAPSHOT to Maven repository...'
 
-          prepare_release_versions(commit_range, tag_version, pr_version, build_number)
+          prepare_release_versions(commit_range, tag_version, pr_version, build_number, false)
           update_archetype_versions
           verify_bom_dependencies
 
@@ -740,19 +815,31 @@ def deploy
           if modified_modules.length > 0
             puts 'Preparing pull request snapshot...'
 
-            prepare_release_versions(commit_range, tag_version, pr_version, build_number)
+            # Only lock snapshots if the PR's destination branch is NOT master.
+            lock_snapshots = !ENV["TRAVIS_BRANCH"].to_s.eql?('master')
+
+            prepare_release_versions(commit_range, tag_version, pr_version, build_number, lock_snapshots)
             update_archetype_versions
             verify_bom_dependencies
+
+            puts 'Installing pull request snapshot...'
+
+            system_stdout("mvn #{sonar_goals('clean install')}"\
+                ' -B'\
+                ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
+                ' -Plibrary'\
+                ' -Dmaven.test.skip=false'\
+                " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}")
+
+            if $? != 0 then raise ArgumentError, 'Failed to install pull request snapshot build!' end
 
             puts 'Deploying pull request snapshot...'
 
             system_stdout("DEPLOY_SKIP_UPLOAD=#{DEBUG_SKIP_UPLOAD}"\
                 ' DEPLOY=true'\
-                " mvn #{sonar_goals('deploy')}"\
+                ' mvn clean deploy'\
                 ' -B'\
-                ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
-                ' -Plibrary'\
-                ' -Dmaven.test.skip=false'\
+                ' -Dmaven.test.skip=true'\
                 ' -DdeployAtEnd=false'\
                 " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
                 ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
@@ -773,7 +860,7 @@ def deploy
           if modified_modules.length > 0
             puts 'Preparing pull request...'
 
-            prepare_release_versions(commit_range, tag_version, '', build_number)
+            prepare_release_versions(commit_range, tag_version, '', build_number, false)
             update_archetype_versions
             verify_bom_dependencies
 
