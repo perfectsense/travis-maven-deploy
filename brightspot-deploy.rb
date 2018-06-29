@@ -698,7 +698,7 @@ def s3deploy
   system_stdout('mvn -f express/site/pom.xml package'\
             ' -B'\
             ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
-            ' -Dmaven.test.skip=false')
+            ' -Dmaven.test.skip=true')
 
   if $? != 0 then raise ArgumentError, 'Failed to compile the Express Site WAR file for S3 deploy!' end
 
