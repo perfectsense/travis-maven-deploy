@@ -746,8 +746,7 @@ def deploy
       system_stdout('mvn clean install'\
             ' -B'\
             ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
-            ' -Plibrary'\
-            ' -Dmaven.test.skip=false')
+            ' -Plibrary')
 
       if $? != 0 then raise ArgumentError, 'Failed to install release!' end
 
@@ -793,7 +792,6 @@ def deploy
               " mvn #{sonar_goals('deploy')}"\
               ' -B'\
               ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
-              ' -Dmaven.test.skip=false'\
               ' -DdeployAtEnd=false'\
               " -Dmaven.deploy.skip=#{DEBUG_SKIP_UPLOAD}"\
               ' --settings=$(dirname $(pwd)/$0)/etc/settings.xml'\
@@ -830,7 +828,6 @@ def deploy
                 ' -B'\
                 ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                 ' -Plibrary'\
-                ' -Dmaven.test.skip=false'\
                 " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}")
 
             if $? != 0 then raise ArgumentError, 'Failed to install pull request snapshot build!' end
