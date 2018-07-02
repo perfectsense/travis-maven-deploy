@@ -628,7 +628,7 @@ def module_release_version(module_path, tag_version, pr_version, build_number, i
       commit_count = `git rev-list --count HEAD -- #{root_module_path}`.to_s.strip
       commit_hash = `git rev-list HEAD -- #{root_module_path} | head -1`.to_s.strip[0, 6]
 
-      return "#{old_version.major_number}.#{old_version.minor_number}.#{commit_count}-#{commit_hash}"
+      return "#{old_version.major_number}.#{old_version.minor_number}.#{commit_count}-x#{commit_hash}"
     end
 
   elsif !pr_version.to_s.strip.empty?
