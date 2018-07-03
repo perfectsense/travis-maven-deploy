@@ -870,7 +870,6 @@ def deploy
                   ' -B'\
                   ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                   ' -Plibrary'\
-                  ' -Dmaven.test.skip=false'\
                   " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}")
 
             if $? != 0 then raise ArgumentError, 'Failed to build pull request!' end
