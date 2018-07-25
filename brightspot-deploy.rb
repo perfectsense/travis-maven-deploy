@@ -712,7 +712,8 @@ def s3deploy
 end
 
 def sonar_goals(phases)
-  ENV["SONAR_TOKEN"] ? "org.jacoco:jacoco-maven-plugin:prepare-agent #{phases} sonar:sonar" : phases
+  # ENV["SONAR_TOKEN"] ? "org.jacoco:jacoco-maven-plugin:prepare-agent #{phases} sonar:sonar" : phases
+  phases
 end
 
 def deploy
