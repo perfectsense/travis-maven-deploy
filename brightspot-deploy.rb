@@ -428,7 +428,7 @@ def prepare_release_versions(commit_range, tag_version, pr_version, build_number
 
   system_stdout('git fetch --unshallow')
 
-  if commit_range != nil && !commit_range.to_s.strip.empty?
+  if commit_range != nil && !commit_range.to_s.strip.empty? && !pr_version.to_s.strip.empty?
     module_paths = get_project_diff_list(commit_range)
   else
     module_paths = Array.new
@@ -628,7 +628,7 @@ def module_release_version(module_path, tag_version, pr_version, build_number, i
       commit_count = `git rev-list --count HEAD -- #{root_module_path}`.to_s.strip
       commit_hash = `git rev-list HEAD -- #{root_module_path} | head -1`.to_s.strip[0, 6]
 
-      return "#{old_version.major_number}.#{old_version.minor_number}.#{commit_count}-#{commit_hash}"
+      return "#{old_version.major_number}.#{old_version.minor_number}.#{commit_count}-x#{commit_hash}"
     end
 
   elsif !pr_version.to_s.strip.empty?
@@ -871,7 +871,6 @@ def deploy
                   ' -B'\
                   ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                   ' -Plibrary'\
-                  ' -Dmaven.test.skip=false'\
                   " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}")
 
             if $? != 0 then raise ArgumentError, 'Failed to build pull request!' end

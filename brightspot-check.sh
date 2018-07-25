@@ -13,3 +13,4 @@ if xmlstarlet sel -N m='http://maven.apache.org/POM/4.0.0' -t -i 'count(/m:proje
     echo 'Please define all dependency versions inside <dependencyManagement> in dari/grandparent/pom.xml'
     exit 1
 fi
+
