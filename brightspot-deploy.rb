@@ -802,6 +802,20 @@ def deploy
 
           s3deploy
 
+        elsif ENV["TRAVIS_BRANCH"].to_s.start_with?("release/")
+
+          puts 'Building release branch (no deploy)...'
+
+          prepare_release_versions(commit_range, tag_version, pr_version, build_number, false)
+          update_archetype_versions
+          verify_bom_dependencies
+
+          system_stdout("mvn #{sonar_goals('install')}"\
+              ' -B'\
+              ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn')
+
+          if $? != 0 then raise ArgumentError, 'Failed to build release branch!' end
+
         else
           puts 'Branch is not associated with a PR, nothing to do...'
         end
