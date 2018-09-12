@@ -881,12 +881,22 @@ def deploy
 
             puts 'Building pull request...'
 
-            system_stdout(
+            if ENV["TRAVIS_BRANCH"].to_s.eql?('master')
+              system_stdout(
                   " mvn #{sonar_goals('install')}"\
                   ' -B'\
                   ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
                   ' -Plibrary'\
                   " -pl .,parent,bom,grandparent,#{modified_modules.join(',')}")
+            else
+              puts 'Target branch is not master, building ALL modules instead!'
+
+              system_stdout(
+                  " mvn #{sonar_goals('install')}"\
+                  ' -B'\
+                  ' -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'\
+                  ' -Plibrary')
+            end
 
             if $? != 0 then raise ArgumentError, 'Failed to build pull request!' end
 
