@@ -283,6 +283,11 @@ def get_project_diff_list(commit_range)
 
   modified_root_paths = `cat modified_root_paths.out | cut -d/ -f1 | uniq`
   modified_root_paths = modified_root_paths.split(/\n+/)
+
+  if modified_root_paths.include? 'express'
+    modified_root_paths.push('styleguide')
+  end
+
   puts "modified_root_paths: #{modified_root_paths.join(" ")}"
 
   root_modules = maven_module_list(".")
